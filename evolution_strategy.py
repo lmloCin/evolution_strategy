@@ -9,12 +9,28 @@ def ackley_function(x):
     c = 2 * 3.14159265358979323846
     sum1 = sum(xi**2 for xi in x) 
     sum2 = sum(math.cos(c * xi) for xi in x)
-    term1 = -a * math.exp(-b * math.sqrt(0.5 * sum1 / d))
-    term2 = -a * math.exp(0.5 * sum2 / d)
+    term1 = -a * math.exp(-b * math.sqrt(sum1 / d))
+    term2 =  -math.exp(sum2 / d)
     return term1 + term2 + a + math.e
 
 
+def rastrigin_function(x):
+    d = len(x)
+    A = 10
+    sum1 = sum(xi**2 - A * math.cos(2 * math.pi * xi) for xi in x)
+    return A * d + sum1
 
+
+def schwefel_function(x):
+    d = len(x)
+    sum1 = sum(xi * math.sin(math.sqrt(abs(xi))) for xi in x)
+    return 418.9829 * d - sum1
+
+
+def rosenbrock_function(x):
+    d = len(x)
+    sum1 = sum(100 * (x[i+1] - x[i]**2)**2 + (1 - x[i])**2 for i in range(d - 1))
+    return sum1
 
 def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
     """
@@ -30,11 +46,20 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
     Returns:
         tuple: O melhor indivíduo encontrado (vetor de variáveis) e seu valor de fitness.
     """
-    # Limites da busca para a Função de Ackley, conforme exemplo [cite: 19]
-    bounds = np.array([[-30.0, 30.0]] * n_dims)
+    # Define limites de busca específicos para cada função objetivo
+    if objective_func == ackley_function:
+        bounds = np.array([[-30.0, 30.0]] * n_dims)
+    elif objective_func == rastrigin_function:
+        bounds = np.array([[-5.12, 5.12]] * n_dims)
+    elif objective_func == schwefel_function:
+        bounds = np.array([[-500.0, 500.0]] * n_dims)
+    elif objective_func == rosenbrock_function:
+        bounds = np.array([[-5.0, 10.0]] * n_dims)
+    else:
+        raise ValueError("Função objetivo desconhecida. Defina os limites apropriados.")
     
     # Parâmetro para evitar que os passos de mutação fiquem muito pequenos [cite: 23]
-    epsilon0 = 1e-2
+    epsilon0 = 1e-3
     
     # Taxas de aprendizado para a mutação dos sigmas [cite: 24]
     tau_prime = 1 / np.sqrt(2 * n_dims)
@@ -47,7 +72,7 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
         # Variáveis de objeto inicializadas aleatoriamente dentro dos limites
         x = np.random.uniform(bounds[:, 0], bounds[:, 1], n_dims)
         # Parâmetros de estratégia (sigmas) inicializados 
-        sigma = np.random.uniform(0.1, 5.0, n_dims)
+        sigma = np.random.uniform(5, 15, n_dims)
         fitness = objective_func(x)
         population.append([x, sigma, fitness])
 
@@ -74,7 +99,7 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
             mutation_global = np.exp(tau_prime * np.random.normal(0, 1))
             mutations_individual = np.exp(tau * np.random.normal(0, 1, n_dims))
             sigma_child_mutated = sigma_child * mutation_global * mutations_individual
-            
+             
             # Garante que sigma não seja menor que um valor mínimo [cite: 23]
             sigma_child_mutated = np.maximum(sigma_child_mutated, epsilon0)
             
@@ -100,22 +125,22 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
             best_fitness_overall = current_best_fitness
             best_solution_overall = population[0][0]
 
-        if (gen + 1) % 100 == 0:
-            print(f"Geração {gen+1:4d}: Melhor Fitness = {best_fitness_overall:.8f}")
+        if (gen + 1) % 100 == 0 or gen < 10:
+            print(f"Geração {gen+1:4d}: Melhor Fitness = {best_fitness_overall:.8f} | Melhor Solução = {population[0][0]}")
 
     return best_solution_overall, best_fitness_overall
 
 if __name__ == '__main__':
     # Parâmetros da Estratégia Evolutiva
-    N_DIMS = 30           # Número de dimensões, como no exemplo da função de Ackley [cite: 19]
-    MU = 10               # Tamanho da população (pais) [cite: 19]
+    N_DIMS = 3           # Número de dimensões, como no exemplo da função de Ackley [cite: 19]
+    MU = 30               # Tamanho da população (pais) [cite: 19]
     LAMBDA = 200          # Número de filhos gerados [cite: 13, 19]
-    MAX_GENERATIONS = 2000 # Critério de parada [cite: 19]
+    MAX_GENERATIONS = 1000 # Critério de parada [cite: 19]
 
     print("Iniciando a Estratégia Evolutiva (30, 200) para a Função de Ackley...")
     
     best_solution, best_fitness = evolutionary_strategy(
-        objective_func=ackley_function,
+        objective_func=rosenbrock_function,
         n_dims=N_DIMS,
         mu=MU,
         lambda_=LAMBDA,
