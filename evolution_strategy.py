@@ -47,7 +47,7 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
         tuple: O melhor indivíduo encontrado (vetor de variáveis) e seu valor de fitness.
     """
 
-    
+
     # Define limites de busca específicos para cada função objetivo
     if objective_func == ackley_function:
         bounds = np.array([[-30.0, 30.0]] * n_dims)
@@ -60,10 +60,10 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
     else:
         raise ValueError("Função objetivo desconhecida. Defina os limites apropriados.")
     
-    # Parâmetro para evitar que os passos de mutação fiquem muito pequenos [cite: 23]
+    # Parâmetro para evitar que os passos de mutação fiquem muito pequenos 
     epsilon0 = 1e-3
     
-    # Taxas de aprendizado para a mutação dos sigmas [cite: 24]
+    # Taxas de aprendizado para a mutação dos sigmas
     tau_prime = 1 / np.sqrt(2 * n_dims)
     tau = 1 / np.sqrt(2 * np.sqrt(n_dims))
 
@@ -81,7 +81,7 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
     best_fitness_overall = float('inf')
     best_solution_overall = None
 
-    # Loop evolucionário principal [cite: 3]
+    # Loop evolucionário principal
     for gen in range(max_generations):
         offspring = []
         for _ in range(lambda_):
@@ -90,19 +90,19 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
             p1, p2 = np.random.choice(range(mu), 2, replace=False)
             parent1, parent2 = population[p1], population[p2]
 
-            # Recombinação discreta para variáveis de objeto (x) [cite: 8]
+            # Recombinação discreta para variáveis de objeto (x)
             x_child = np.array([parent1[0][i] if np.random.rand() < 0.5 else parent2[0][i] for i in range(n_dims)])
-            
-            # Recombinação intermediária para parâmetros de estratégia (sigma) [cite: 8]
+
+            # Recombinação intermediária para parâmetros de estratégia (sigma)
             sigma_child = (parent1[1] + parent2[1]) / 2.0
 
-            # 2. Mutação (na ordem correta: sigma primeiro, depois x) 
-            # Mutação dos sigmas com distribuição log-normal (auto-adaptação) [cite: 24]
+            # 2. Mutação (na ordem correta: sigma primeiro, depois x)
+            # Mutação dos sigmas com distribuição log-normal (auto-adaptação)
             mutation_global = np.exp(tau_prime * np.random.normal(0, 1))
             mutations_individual = np.exp(tau * np.random.normal(0, 1, n_dims))
             sigma_child_mutated = sigma_child * mutation_global * mutations_individual
-             
-            # Garante que sigma não seja menor que um valor mínimo [cite: 23]
+
+            # Garante que sigma não seja menor que um valor mínimo
             sigma_child_mutated = np.maximum(sigma_child_mutated, epsilon0)
             
             # Mutação das variáveis de objeto com ruído Gaussiano 
@@ -115,7 +115,7 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
             fitness_child = objective_func(x_child_mutated)
             offspring.append([x_child_mutated, sigma_child_mutated, fitness_child])
 
-        # 3. Seleção de Sobreviventes: (µ, λ) [cite: 9]
+        # 3. Seleção de Sobreviventes: (µ, λ)
         # Ordena os filhos pelo fitness (minimização)
         offspring.sort(key=lambda item: item[2])
         
@@ -134,10 +134,10 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
 
 if __name__ == '__main__':
     # Parâmetros da Estratégia Evolutiva
-    N_DIMS = 3           # Número de dimensões, como no exemplo da função de Ackley [cite: 19]
-    MU = 30               # Tamanho da população (pais) [cite: 19]
-    LAMBDA = 200         # Número de filhos gerados [cite: 13, 19]
-    MAX_GENERATIONS = 1000 # Critério de parada [cite: 19]
+    N_DIMS = 3           # Número de dimensões, como no exemplo da função de Ackley
+    MU = 30               # Tamanho da população (pais)
+    LAMBDA = 200         # Número de filhos gerados
+    MAX_GENERATIONS = 1000 # Critério de parada
 
     print("Iniciando a Estratégia Evolutiva (30, 200)")
 
