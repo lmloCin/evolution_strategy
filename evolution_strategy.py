@@ -1,6 +1,8 @@
 import random
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 def ackley_function(x):
     d = len(x)
@@ -31,6 +33,14 @@ def rosenbrock_function(x):
     d = len(x)
     sum1 = sum(100 * (x[i+1] - x[i]**2)**2 + (1 - x[i])**2 for i in range(d - 1))
     return sum1
+
+
+def standard_deviation(indv):
+    indv_minus_average_and_square = []
+    for i in indv:
+        indv_minus_average_and_square.append((i-(sum(indv)/len(indv)))**2)
+    return (sum(indv_minus_average_and_square)/len(indv_minus_average_and_square))**0.5
+
 
 def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
     """
@@ -80,9 +90,17 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
 
     best_fitness_overall = float('inf')
     best_solution_overall = None
+    
+    generations_count = 0
+    # Loop evolucionário principal
+    generations_without_improvement = 0
+    stagnation_limit = 100  # Critério de parada por estagnação
 
     # Loop evolucionário principal
-    for gen in range(max_generations):
+    # O loop continua enquanto não atingir o máximo de gerações, o fitness for maior que o alvo,
+    # e não houver estagnação.
+    while generations_without_improvement < stagnation_limit:
+        generations_count += 1
         offspring = []
         for _ in range(lambda_):
             # 1. Seleção de Pais e Recombinação
@@ -126,11 +144,22 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
         if current_best_fitness < best_fitness_overall:
             best_fitness_overall = current_best_fitness
             best_solution_overall = population[0][0]
+            generations_without_improvement = 0
+        else:
+            generations_without_improvement += 1
 
-        if (gen + 1) % 100 == 0 or gen < 10:
-            print(f"Geração {gen+1:4d}: Melhor Fitness = {best_fitness_overall:.8f} | Melhor Solução = {population[0][0]}")
+        #if (generations_count) % 100 == 0 or generations_count < 10:
+           # print(f"Geração {generations_count:4d}: Melhor Fitness = {best_fitness_overall:.8f} | Melhor Solução = {population[0][0]}")
 
-    return best_solution_overall, best_fitness_overall
+    
+    print("\n--- Motivo da Parada ---")
+    if generations_without_improvement >= stagnation_limit:
+        print(f"Parada por estagnação: {stagnation_limit} gerações sem melhoria no fitness.")
+    elif generations_count >= max_generations:
+        print(f"Parada por atingir o número máximo de gerações ({max_generations}).")
+    print(f"Geração {generations_count:4d}: Melhor Fitness = {best_fitness_overall:.8f} | Melhor Solução = {population[0][0]}")
+    
+    return best_solution_overall, best_fitness_overall, generations_count
 
 if __name__ == '__main__':
     # Parâmetros da Estratégia Evolutiva
@@ -141,14 +170,38 @@ if __name__ == '__main__':
 
     print("Iniciando a Estratégia Evolutiva (30, 200)")
 
-    best_solution, best_fitness = evolutionary_strategy(
-        objective_func=schwefel_function,  # Pode ser alterada para ackley_function, rastrigin_function, rosenbrock_function
-        n_dims=N_DIMS,
-        mu=MU,
-        lambda_=LAMBDA,
-        max_generations=MAX_GENERATIONS
-    )
+    num_executions = 10
+    total_interactions = []
+    all_final_best_fitnesses = []
+    all_final_avg_fitnesses = []
+    best_solution_overall = None
+    best_fitness_overall = float('inf')
+
+    for i in range(num_executions):
+        best_solution, best_fitness, generations_count = evolutionary_strategy(
+            objective_func=schwefel_function,  # Pode ser alterada para ackley_function, rastrigin_function, rosenbrock_function, schwefel_function
+            n_dims=N_DIMS,
+            mu=MU,
+            lambda_=LAMBDA,
+            max_generations=MAX_GENERATIONS
+        )
+
+        # Coleta de dados para análise
+        all_final_best_fitnesses.append(best_fitness)
+        all_final_avg_fitnesses.append(np.mean(all_final_best_fitnesses))
+        total_interactions.append(generations_count)
+        if best_fitness < best_fitness_overall :
+            best_fitness_overall = best_fitness
+            best_solution_overall = best_solution
 
     print("\nOtimização concluída.")
     print(f"Melhor solução encontrada: {best_solution}")
     print(f"Valor mínimo da função (fitness): {best_fitness}")
+    print("\n" + "="*50)
+    print("--- Overall Analysis Results ---")
+    print(f"Total executions: {num_executions}")
+    print(f"Average final best fitness: {sum(all_final_best_fitnesses) / num_executions}")
+    print(f"Average final fitness: {sum(all_final_avg_fitnesses) / num_executions}")
+    #print(f"Average Fitness standard deviation: {standard_deviation(all_final_avg_fitnesses)}")
+    print(f"Average interactions for all runs: {sum(total_interactions) / num_executions:.2f}")
+    #print(f"Interactions standard deviation: {standard_deviation(total_interactions)}")
