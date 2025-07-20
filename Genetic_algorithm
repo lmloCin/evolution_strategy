@@ -1,8 +1,10 @@
 import numpy as np
 import math
 import random
+import matplotlib.pyplot as plt  # 📌 biblioteca para gráfico
 
 
+# ... (Funções de benchmark: ackley_function, etc. — mantenha como no seu código original)
 # --- Funções de benchmark (mantidas) ---
 
 def ackley_function(x):
@@ -36,9 +38,10 @@ def rosenbrock_function(x):
     return sum1
 
 
-# --- Algoritmo Genético Real-Codificado ---
 
-def genetic_algorithm(objective_func, n_dims, pop_size, generations, bounds, mutation_rate=0.1, elite_size=1):
+# --- Algoritmo Genético Real-Codificado com GRÁFICO ---
+
+def genetic_algorithm(objective_func, n_dims, pop_size, generations, bounds, mutation_rate=0.1, elite_size=1, func_name=""):
     def create_individual():
         return np.random.uniform(bounds[:, 0], bounds[:, 1], n_dims)
 
@@ -56,49 +59,55 @@ def genetic_algorithm(objective_func, n_dims, pop_size, generations, bounds, mut
         selected = min(indices, key=lambda i: fitnesses[i])
         return pop[selected]
 
-    # Inicialização da população
     population = [create_individual() for _ in range(pop_size)]
     best_solution = None
     best_fitness = float('inf')
+    fitness_history = []  # 📈 histórico do melhor fitness
 
     for gen in range(generations):
         fitnesses = [objective_func(ind) for ind in population]
-
-        # Atualiza melhor solução
         min_idx = np.argmin(fitnesses)
-        if fitnesses[min_idx] < best_fitness:
-            best_fitness = fitnesses[min_idx]
+        current_best = fitnesses[min_idx]
+
+        if current_best < best_fitness:
+            best_fitness = current_best
             best_solution = population[min_idx]
 
-        # Elitismo: mantém os melhores
-        elites = [population[i] for i in np.argsort(fitnesses)[:elite_size]]
+        fitness_history.append(best_fitness)
 
-        # Nova população
+        elites = [population[i] for i in np.argsort(fitnesses)[:elite_size]]
         new_population = elites.copy()
+
         while len(new_population) < pop_size:
             parent1 = tournament_selection(population, fitnesses)
             parent2 = tournament_selection(population, fitnesses)
             child = crossover(parent1, parent2)
-
             if random.random() < mutation_rate:
                 child = mutate(child)
-
             new_population.append(child)
 
         population = new_population
 
-        if (gen + 1) % 100 == 0 or gen < 10:
-            print(f"Geração {gen + 1:4d}: Melhor Fitness = {best_fitness:.8f} | Melhor Solução = {best_solution}")
+    # 📊 Plota o gráfico após a execução
+    plt.figure()
+    plt.plot(fitness_history, label="Fitness mínimo")
+    plt.title(f"Convergência - {func_name}")
+    plt.xlabel("Geração")
+    plt.ylabel("Melhor Fitness")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
     return best_solution, best_fitness
 
 
-# --- Benchmark GA em várias funções objetivo ---
+# --- Benchmark com gráfico para cada função ---
 
 def run_benchmark_ga():
     n_dims = 3
-    pop_size = 100
-    generations = 1000
+    pop_size = 30
+    generations = 100
 
     benchmarks = [
         ("Ackley", ackley_function, np.array([[-30, 30]] * n_dims)),
@@ -116,7 +125,8 @@ def run_benchmark_ga():
             generations=generations,
             bounds=bounds,
             mutation_rate=0.2,
-            elite_size=2
+            elite_size=2,
+            func_name=name  # usado no gráfico
         )
         print(f"✅ Resultado {name}:")
         print(f"  Melhor solução: {best_solution}")
