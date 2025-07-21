@@ -8,7 +8,7 @@ def ackley_function(x):
     d = len(x)
     a = 20
     b = 0.2
-    c = 2 * 3.14159265358979323846
+    c = 2 * math.pi
     sum1 = sum(xi**2 for xi in x) 
     sum2 = sum(math.cos(c * xi) for xi in x)
     term1 = -a * math.exp(-b * math.sqrt(sum1 / d))
