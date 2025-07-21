@@ -109,8 +109,8 @@ def genetic_algorithm(objective_func, n_dims, pop_size, generations, bounds, mut
 
 def run_benchmark_ga():
     n_dims = 30
-    pop_size = 30
-    generations = 100
+    pop_size = 500
+    generations = 1000
 
     benchmarks = [
         ("Ackley", ackley_function, np.array([[-30, 30]] * n_dims)),
