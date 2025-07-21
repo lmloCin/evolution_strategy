@@ -97,6 +97,9 @@ def genetic_algorithm(objective_func, n_dims, pop_size, generations, bounds, mut
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
+    plt.savefig(f"convergencia_{func_name.lower()}.png") # Salva o gráfico como PNG
+    # --------------------------
+
     plt.show()
 
     return best_solution, best_fitness
@@ -105,7 +108,7 @@ def genetic_algorithm(objective_func, n_dims, pop_size, generations, bounds, mut
 # --- Benchmark com gráfico para cada função ---
 
 def run_benchmark_ga():
-    n_dims = 3
+    n_dims = 30
     pop_size = 30
     generations = 100
 
