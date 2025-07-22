@@ -12,7 +12,7 @@ def ackley_function(x):
     sum1 = sum(xi**2 for xi in x) 
     sum2 = sum(math.cos(c * xi) for xi in x)
     term1 = -a * math.exp(-b * math.sqrt(sum1 / d))
-    term2 =  -math.exp(sum2 / d)
+    term2 = -math.exp(sum2 / d)
     return term1 + term2 + a + math.e
 
 
@@ -42,7 +42,7 @@ def standard_deviation(indv):
     return (sum(indv_minus_average_and_square)/len(indv_minus_average_and_square))**0.5
 
 
-def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
+def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations, func_name="Unknown Function"):
     """
     Implementa uma Estratégia Evolutiva (µ, λ) para minimizar uma função objetivo.
 
@@ -52,11 +52,11 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
         mu (int): O tamanho da população de pais.
         lambda_ (int): O número de filhos a serem gerados a cada geração.
         max_generations (int): O número de gerações para executar o algoritmo.
+        func_name (str): Nome da função objetivo para o título do gráfico.
 
     Returns:
         tuple: O melhor indivíduo encontrado (vetor de variáveis) e seu valor de fitness.
     """
-
 
     # Define limites de busca específicos para cada função objetivo
     if objective_func == ackley_function:
@@ -94,12 +94,16 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
     generations_count = 0
     # Loop evolucionário principal
     generations_without_improvement = 0
-    stagnation_limit = 100  # Critério de parada por estagnação
+    stagnation_limit = 100 # Critério de parada por estagnação
+    
+    # Histórico para gráficos
+    best_fitness_history = []
+    avg_fitness_history = []
+    avg_sigma_history = [] # Para a média dos sigmas (parâmetros de mutação)
 
     # Loop evolucionário principal
-    # O loop continua enquanto não atingir o máximo de gerações, o fitness for maior que o alvo,
-    # e não houver estagnação.
-    while generations_without_improvement < stagnation_limit:
+    # O loop continua enquanto não atingir o máximo de gerações, e não houver estagnação.
+    while generations_without_improvement < stagnation_limit and generations_count < max_generations: # Adicionado max_generations ao while
         generations_count += 1
         offspring = []
         for _ in range(lambda_):
@@ -140,68 +144,116 @@ def evolutionary_strategy(objective_func, n_dims, mu, lambda_, max_generations):
         # Os 'mu' melhores filhos se tornam a nova população de pais
         population = offspring[:mu]
 
+        # Coleta de histórico para gráficos
         current_best_fitness = population[0][2]
+        current_avg_fitness = np.mean([ind[2] for ind in population])
+        current_avg_sigma = np.mean([np.mean(ind[1]) for ind in population]) # Média dos sigmas de todos os pais
+
+        best_fitness_history.append(current_best_fitness)
+        avg_fitness_history.append(current_avg_fitness)
+        avg_sigma_history.append(current_avg_sigma) # Adiciona à lista
+
+        # Atualiza melhor global e verifica estagnação
         if current_best_fitness < best_fitness_overall:
             best_fitness_overall = current_best_fitness
-            best_solution_overall = population[0][0]
+            best_solution_overall = population[0][0] # Armazena a solução x
             generations_without_improvement = 0
         else:
             generations_without_improvement += 1
 
-        #if (generations_count) % 100 == 0 or generations_count < 10:
-           # print(f"Geração {generations_count:4d}: Melhor Fitness = {best_fitness_overall:.8f} | Melhor Solução = {population[0][0]}")
+    # --- Fim do Loop Evolucionário ---
 
+    # 📊 Geração e SALVAMENTO dos Gráficos de Convergência
+    plt.figure(figsize=(12, 5))
+
+    # Gráfico 1: Melhor Fitness e Média de Fitness por Geração
+    plt.subplot(1, 2, 1) # 1 linha, 2 colunas, 1º gráfico
+    plt.plot(best_fitness_history, label="Melhor Fitness (Global)", color='blue')
+    plt.plot(avg_fitness_history, label="Fitness Médio da População", color='red', linestyle='--')
+    plt.title(f"Convergência do Fitness - {func_name}")
+    plt.xlabel("Geração")
+    plt.ylabel("Valor do Fitness")
+    plt.grid(True)
+    plt.legend()
+
+    # Gráfico 2: Média dos Sigmas por Geração (parâmetros de mutação)
+    plt.subplot(1, 2, 2) # 1 linha, 2 colunas, 2º gráfico
+    plt.plot(avg_sigma_history, label="Média dos Sigmas", color='green')
+    plt.title(f"Evolução da Média dos Sigmas - {func_name}")
+    plt.xlabel("Geração")
+    plt.ylabel("Valor Médio de Sigma")
+    plt.grid(True)
+    plt.legend()
     
+    plt.tight_layout() # Ajusta o layout para evitar sobreposição
+    plt.suptitle(f"Estratégia Evolutiva para {func_name} (μ={mu}, λ={lambda_}, D={n_dims})", y=1.02) # Título geral
+    
+    # SALVA O GRÁFICO EM VEZ DE MOSTRAR NA TELA
+    plt.savefig(f"ES_convergencia_{func_name.lower().replace(' ', '_')}.png") 
+    plt.close() # Fecha a figura para liberar memória (importante em loops de muitas execuções)
+
+
     print("\n--- Motivo da Parada ---")
     if generations_without_improvement >= stagnation_limit:
         print(f"Parada por estagnação: {stagnation_limit} gerações sem melhoria no fitness.")
-    elif generations_count >= max_generations:
+    elif generations_count >= max_generations: # Verifica se atingiu max_generations
         print(f"Parada por atingir o número máximo de gerações ({max_generations}).")
-    print(f"Geração {generations_count:4d}: Melhor Fitness = {best_fitness_overall:.8f} | Melhor Solução = {population[0][0]}")
+    
+    # Imprime o melhor resultado final da execução
+    print(f"Resultado Final para {func_name}:")
+    print(f"Gerações: {generations_count}")
+    print(f"Melhor Fitness Encontrado: {best_fitness_overall:.8f}")
+    print(f"Melhor Solução Encontrada (x): {best_solution_overall}")
     
     return best_solution_overall, best_fitness_overall, generations_count
 
+
 if __name__ == '__main__':
     # Parâmetros da Estratégia Evolutiva
-    N_DIMS = 3           # Número de dimensões, como no exemplo da função de Ackley
-    MU = 30               # Tamanho da população (pais)
-    LAMBDA = 200         # Número de filhos gerados
-    MAX_GENERATIONS = 1000 # Critério de parada
+    N_DIMS = 30  # Número de dimensões
+    MU = 50  # Tamanho da população (pais)
+    LAMBDA = 1000 # Número de filhos gerados
+    MAX_GENERATIONS = 5000 # Critério de parada de gerações
 
-    print("Iniciando a Estratégia Evolutiva (30, 200)")
+    print("Iniciando a Estratégia Evolutiva (µ, λ)-ES")
 
-    num_executions = 10
-    total_interactions = []
-    all_final_best_fitnesses = []
-    all_final_avg_fitnesses = []
-    best_solution_overall = None
-    best_fitness_overall = float('inf')
+    # Lista de funções de benchmark a serem testadas
+    benchmarks = [
+        ("Ackley", ackley_function),
+        ("Rastrigin", rastrigin_function),
+        ("Schwefel", schwefel_function),
+        ("Rosenbrock", rosenbrock_function),
+    ]
 
-    for i in range(num_executions):
-        best_solution, best_fitness, generations_count = evolutionary_strategy(
-            objective_func=schwefel_function,  # Pode ser alterada para ackley_function, rastrigin_function, rosenbrock_function, schwefel_function
+    results_summary = [] # Para armazenar os resultados de cada execução para análise externa
+    
+    # Executa a ES para cada função de benchmark
+    for name, func in benchmarks:
+        print(f"\n" + "="*50)
+        print(f"🏁 Otimizando função: {name}")
+        
+        # Realiza uma única execução da Estratégia Evolutiva
+        best_solution_run, best_fitness_run, generations_count_run = evolutionary_strategy(
+            objective_func=func, 
             n_dims=N_DIMS,
             mu=MU,
             lambda_=LAMBDA,
-            max_generations=MAX_GENERATIONS
+            max_generations=MAX_GENERATIONS,
+            func_name=name # Passa o nome da função para o título do gráfico
         )
-
-        # Coleta de dados para análise
-        all_final_best_fitnesses.append(best_fitness)
-        all_final_avg_fitnesses.append(np.mean(all_final_best_fitnesses))
-        total_interactions.append(generations_count)
-        if best_fitness < best_fitness_overall :
-            best_fitness_overall = best_fitness
-            best_solution_overall = best_solution
-
-    print("\nOtimização concluída.")
-    print(f"Melhor solução encontrada: {best_solution}")
-    print(f"Valor mínimo da função (fitness): {best_fitness}")
+        # Salva o resultado para um resumo final, se necessário
+        results_summary.append({
+            "function": name,
+            "best_solution": best_solution_run,
+            "best_fitness": best_fitness_run,
+            "generations": generations_count_run
+        })
+    
     print("\n" + "="*50)
-    print("--- Overall Analysis Results ---")
-    print(f"Total executions: {num_executions}")
-    print(f"Average final best fitness: {sum(all_final_best_fitnesses) / num_executions}")
-    print(f"Average final fitness: {sum(all_final_avg_fitnesses) / num_executions}")
-    #print(f"Average Fitness standard deviation: {standard_deviation(all_final_avg_fitnesses)}")
-    print(f"Average interactions for all runs: {sum(total_interactions) / num_executions:.2f}")
-    #print(f"Interactions standard deviation: {standard_deviation(total_interactions)}")
+    print("--- Resumo das Otimizações ---")
+    for res in results_summary:
+        print(f"Função: {res['function']}")
+        print(f"  Melhor Fitness Final: {res['best_fitness']:.8f}")
+        print(f"  Gerações Usadas: {res['generations']}")
+        # print(f" Melhor Solução: {res['best_solution']}") # Descomentar para ver a solução X completa
+    print("="*50)
